@@ -15,4 +15,4 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host '步骤 3/3：创建每天 08:30 的 Windows 计划任务' -ForegroundColor Cyan
 & (Join-Path $ProjectDir 'install_task.ps1') -At '08:30'
-Write-Host '全部完成。请打开 Zotero 并同步，查看“车辆数字孪生_每日追踪”目录。' -ForegroundColor Green
+Write-Host '全部完成。请打开 Zotero 并同步，查看“数字孪生_每日追踪”目录。' -ForegroundColor Green
