@@ -1,0 +1,8 @@
+.secrets/
+logs/
+state.json
+__pycache__/
+*.pyc
+*.dpapi
+.env
+.env.*

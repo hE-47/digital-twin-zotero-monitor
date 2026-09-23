@@ -1,0 +1,32 @@
+{
+  "parent_collection": "数字孪生_每日追踪",
+  "timezone": "Asia/Shanghai",
+  "daily_limit": 5,
+  "initial_limit": 6,
+  "initial_lookback_months": 8,
+  "daily_lookback_days": 7,
+  "minimum_score": 8,
+  "openalex_mailto": "",
+  "journals": [
+    {
+      "name": "IEEE Transactions on Intelligent Vehicles",
+      "short_name": "T-IV",
+      "issns": ["2379-8858", "2379-8904"]
+    },
+    {
+      "name": "IEEE Transactions on Intelligent Transportation Systems",
+      "short_name": "T-ITS",
+      "issns": ["1524-9050", "1558-0016"]
+    },
+    {
+      "name": "Mechanical Systems and Signal Processing",
+      "short_name": "MSSP",
+      "issns": ["0888-3270", "1096-1216"]
+    },
+    {
+      "name": "Journal of Manufacturing Systems",
+      "short_name": "JMS",
+      "issns": ["0278-6125", "1873-538X"]
+    }
+  ]
+}
