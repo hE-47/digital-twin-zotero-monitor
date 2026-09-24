@@ -452,7 +452,10 @@ def main() -> int:
         start = months_ago(today, int(config["initial_lookback_months"]))
         limit = int(config["initial_limit"])
     else:
-        start = today - dt.timedelta(days=int(config["daily_lookback_days"]))
+        if "daily_lookback_months" in config:
+            start = months_ago(today, int(config["daily_lookback_months"]))
+        else:
+            start = today - dt.timedelta(days=int(config.get("daily_lookback_days", 7)))
         limit = int(config["daily_limit"])
 
     logging.info("Searching %s to %s; initial=%s", start, today, initial)
@@ -491,15 +494,15 @@ def main() -> int:
         ], ensure_ascii=False, indent=2))
         return 0
 
-    if not selected:
-        logging.info("No new high-relevance papers found; Zotero unchanged")
-        if initial:
-            state["initialized"] = True
-            save_json_atomic(STATE_PATH, state)
-        return 0
-
     parent_key = ensure_collection(user_id, api_key, config["parent_collection"], False)
     child_key = ensure_collection(user_id, api_key, today.isoformat(), parent_key)
+    if not selected:
+        logging.info("No unread high-relevance papers found; created/confirmed today's Zotero collection")
+        state["initialized"] = True
+        state["last_run"] = dt.datetime.now().astimezone().isoformat()
+        save_json_atomic(STATE_PATH, state)
+        return 0
+
     item_url = f"{ZOTERO}/users/{user_id}/items"
     imported = list(state.get("imported") or [])
     failures = 0
