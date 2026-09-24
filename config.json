@@ -4,7 +4,7 @@
   "daily_limit": 5,
   "initial_limit": 6,
   "initial_lookback_months": 8,
-  "daily_lookback_days": 7,
+  "daily_lookback_months": 8,
   "minimum_score": 8,
   "openalex_mailto": "",
   "journals": [
