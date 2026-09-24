@@ -35,18 +35,54 @@ CROSSREF = "https://api.crossref.org"
 
 SEARCH_QUERY = '"digital twin" OR "digital twins"'
 
-RELATED_TERMS = {
+MODEL_UPDATE_TERMS = {
+    "model updating": 4,
+    "model update": 4,
+    "online updating": 3,
+    "online update": 3,
+    "model calibration": 3,
+    "parameter identification": 3,
+    "system identification": 3,
+    "data assimilation": 3,
     "state estimation": 2,
-    "fault diagnosis": 2,
-    "predictive maintenance": 2,
-    "remaining useful life": 2,
-    "model update": 1,
-    "real-time": 1,
-    "cyber-physical": 2,
-    "virtual commissioning": 2,
-    "machine learning": 1,
-    "artificial intelligence": 1,
-    "internet of things": 1,
+    "kalman filter": 2,
+    "bayesian update": 2,
+    "adaptive model": 2,
+    "model synchronization": 2,
+}
+
+REAL_TIME_TERMS = {
+    "real-time": 4,
+    "real time": 4,
+    "realtime": 4,
+    "online algorithm": 3,
+    "online learning": 3,
+    "incremental learning": 3,
+    "edge computing": 3,
+    "low latency": 3,
+    "latency": 2,
+    "streaming": 2,
+    "adaptive control": 2,
+    "embedded system": 2,
+}
+
+ALGORITHM_TERMS = {
+    "algorithm": 2,
+    "optimization": 2,
+    "machine learning": 2,
+    "deep learning": 2,
+    "neural network": 2,
+    "physics-informed": 2,
+    "pinn": 2,
+    "surrogate model": 2,
+    "reduced-order model": 2,
+    "reduced order model": 2,
+    "co-simulation": 1,
+    "observer": 1,
+    "data fusion": 1,
+    "sensor fusion": 1,
+    "fault diagnosis": 1,
+    "predictive maintenance": 1,
 }
 
 
@@ -189,32 +225,37 @@ def work_key(work: dict[str, Any]) -> str:
     return normalized_doi(work) or (work.get("id") or "").lower()
 
 
-def score_work(work: dict[str, Any], journal: dict[str, Any]) -> tuple[int, list[str], str]:
+def score_work(work: dict[str, Any], journal: dict[str, Any]) -> tuple[int, list[str], str, list[str]]:
     title = clean_markup(work.get("title") or "")
     abstract = decode_abstract(work.get("abstract_inverted_index"))
     text = f"{title} {abstract}".lower()
     title_lower = title.lower()
     digital_twin_in_title = "digital twin" in title_lower or "digital twins" in title_lower
     if "digital twin" not in text and "digital twins" not in text:
-        return 0, [], abstract
+        return 0, [], abstract, []
     if title_lower.startswith(("guest editorial", "editorial")):
-        return 0, [], abstract
+        return 0, [], abstract, []
 
     score = 7
     reasons: list[str] = ["题名或摘要明确出现数字孪生（+7）"]
-    related_hits: list[str] = []
-    related_score = 0
-    for term, weight in RELATED_TERMS.items():
-        if term in text:
-            score += weight
-            related_score += weight
-            related_hits.append(term)
+    directions: list[str] = []
+
+    for label, tag, terms, cap in (
+        ("模型更新算法", "模型更新算法", MODEL_UPDATE_TERMS, 8),
+        ("实时化算法", "实时化算法", REAL_TIME_TERMS, 8),
+        ("通用算法方法", "算法方法", ALGORITHM_TERMS, 6),
+    ):
+        hits = [term for term in terms if term in text]
+        if not hits:
+            continue
+        group_score = min(cap, sum(terms[term] for term in hits))
+        score += group_score
+        directions.append(tag)
+        reasons.append(f"命中{label}（+{group_score}）：" + "、".join(hits[:4]))
 
     if digital_twin_in_title:
         score += 5
         reasons.append("题名直接包含数字孪生（+5）")
-    if related_hits:
-        reasons.append(f"命中相关方法词（+{related_score}）：" + "、".join(related_hits[:4]))
     if abstract:
         score += 1
         reasons.append("有摘要可供相关性判断（+1）")
@@ -228,7 +269,7 @@ def score_work(work: dict[str, Any], journal: dict[str, Any]) -> tuple[int, list
     if citation_score:
         reasons.append(f"OpenAlex 引用量加分（+{citation_score}）")
     reasons.append(f"来源期刊：{journal['short_name']}")
-    return score, reasons, abstract
+    return score, reasons, abstract, directions
 
 
 def openalex_search(config: dict[str, Any], start: dt.date, end: dt.date) -> list[dict[str, Any]]:
@@ -259,12 +300,13 @@ def openalex_search(config: dict[str, Any], start: dt.date, end: dt.date) -> lis
         url = f"{OPENALEX}/works?{urllib.parse.urlencode(params)}"
         response = request_json(url, headers=headers)
         for work in response.get("results", []):
-            score, reasons, abstract = score_work(work, journal)
+            score, reasons, abstract, directions = score_work(work, journal)
             if score < int(config["minimum_score"]):
                 continue
             work["_score"] = score
             work["_reasons"] = reasons
             work["_abstract"] = abstract
+            work["_directions"] = directions
             work["_journal"] = journal
             key = work_key(work)
             previous = candidates.get(key)
@@ -385,6 +427,7 @@ def zotero_item(work: dict[str, Any], collection_key: str) -> dict[str, Any]:
         {"tag": "来源:每日自动检索"},
         {"tag": f"期刊:{journal['short_name']}"},
     ]
+    tags.extend({"tag": f"方向:{direction}"} for direction in work.get("_directions") or [])
     return {
         "itemType": "journalArticle",
         "title": clean_markup(work.get("display_name") or work.get("title") or ""),
