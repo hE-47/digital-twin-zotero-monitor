@@ -27,6 +27,26 @@
       "name": "Journal of Manufacturing Systems",
       "short_name": "JMS",
       "issns": ["0278-6125", "1873-538X"]
+    },
+    {
+      "name": "IEEE Transactions on Industrial Informatics",
+      "short_name": "T-II",
+      "issns": ["1551-3203", "1941-0050"]
+    },
+    {
+      "name": "IEEE Internet of Things Journal",
+      "short_name": "J-IOT",
+      "issns": ["2327-4662"]
+    },
+    {
+      "name": "Advanced Engineering Informatics",
+      "short_name": "AEI",
+      "issns": ["1474-0346"]
+    },
+    {
+      "name": "Robotics and Computer-Integrated Manufacturing",
+      "short_name": "RCIM",
+      "issns": ["0736-5845"]
     }
   ]
 }
