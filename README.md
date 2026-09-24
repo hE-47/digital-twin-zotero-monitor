@@ -6,6 +6,12 @@
 - IEEE Transactions on Intelligent Transportation Systems
 - Mechanical Systems and Signal Processing
 - Journal of Manufacturing Systems
+- IEEE Transactions on Industrial Informatics
+- IEEE Internet of Things Journal
+- Advanced Engineering Informatics
+- Robotics and Computer-Integrated Manufacturing
+
+筛选排序以算法方向为主，重点提高模型更新、在线辨识、数据同化、状态估计、实时计算、在线学习、边缘计算、低时延以及相关优化/机器学习方法的优先级。
 
 默认首次回溯 8 个月、最多 6 篇；之后每天从滚动最近 8 个月的候选池中，按 DOI 和 OpenAlex ID 排除已经导入的论文，再推荐最多 5 篇。这样即使当天没有刚发表的新论文，也会继续推荐候选池中尚未导入的高相关论文。每篇入选论文在写入前还会通过 Crossref 核验 DOI 与题名一致性；如果候选池已经用完，程序仍会创建当天日期目录并记录成功运行。
 
@@ -31,7 +37,7 @@ Zotero 目录结构：
 ## 一次性配置
 
 1. 在 Zotero 的 API Keys 页面创建一个专用密钥，仅授予个人文库的读写权限。
-2. 在 [OpenAlex API 设置](https://openalex.org/settings/api)免费创建检索密钥。当前脚本每天仅发出 4 次搜索请求，处于免费额度内。
+2. 在 [OpenAlex API 设置](https://openalex.org/settings/api)免费创建检索密钥。当前脚本每天按 8 本期刊执行小规模检索。
 3. 双击 `一键完成配置.cmd`，依次粘贴两个密钥。它会自动完成首次导入，并安装每天 08:30 的计划任务。
 
 也可以在本目录打开 PowerShell 分步执行：
@@ -67,7 +73,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 ## 自动相关性优先级评分
 
-该分数不是 GPT 的估计，而是用于排序的固定规则分：题名或摘要明确出现“digital twin(s)”得基础 7 分；题名直接命中再加 5 分；有摘要加 1 分；综述加 2 分；相关方法词按 1–2 分累加；OpenAlex 引用量每 10 次加 1 分、最多加 3 分。当前最低入选分为 8 分。分数只表示自动阅读优先级，不等于论文质量、创新性或可信度。
+该分数不是 GPT 的估计，而是用于排序的固定规则分：题名或摘要明确出现“digital twin(s)”得基础 7 分；题名直接命中再加 5 分；模型更新算法词最高加 8 分；实时化算法词最高加 8 分；优化、机器学习、降阶模型等通用算法词最高加 6 分；有摘要加 1 分；综述加 2 分；OpenAlex 引用量每 10 次加 1 分、最多加 3 分。当前最低入选分为 8 分。分数只表示自动阅读优先级，不等于论文质量、创新性或可信度。命中算法方向的论文会在 Zotero 中增加“方向:模型更新算法”“方向:实时化算法”或“方向:算法方法”标签。
 
 ## 内容与版权边界
 
