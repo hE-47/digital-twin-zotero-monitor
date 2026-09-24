@@ -7,7 +7,7 @@
 - Mechanical Systems and Signal Processing
 - Journal of Manufacturing Systems
 
-默认首次回溯 8 个月、最多 6 篇；之后每天回看最近 7 天、按 DOI 和 OpenAlex ID 去重，最多导入 5 篇。回看 7 天是为了容忍出版数据库的收录延迟，不会导致重复导入。每篇入选论文在写入前还会通过 Crossref 核验 DOI 与题名一致性。
+默认首次回溯 8 个月、最多 6 篇；之后每天从滚动最近 8 个月的候选池中，按 DOI 和 OpenAlex ID 排除已经导入的论文，再推荐最多 5 篇。这样即使当天没有刚发表的新论文，也会继续推荐候选池中尚未导入的高相关论文。每篇入选论文在写入前还会通过 Crossref 核验 DOI 与题名一致性；如果候选池已经用完，程序仍会创建当天日期目录并记录成功运行。
 
 Zotero 目录结构：
 
