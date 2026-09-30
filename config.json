@@ -1,13 +1,20 @@
 {
   "parent_collection": "数字孪生_每日追踪",
   "timezone": "Asia/Shanghai",
-  "daily_limit": 5,
-  "initial_limit": 6,
+  "weekly_limit": 3,
+  "initial_limit": 3,
   "initial_lookback_months": 8,
-  "daily_lookback_months": 8,
+  "weekly_lookback_months": 12,
   "minimum_score": 8,
   "openalex_mailto": "",
   "journals": [
+    {"name": "Nature", "short_name": "Nature", "family": "Nature/Science", "issns": ["0028-0836", "1476-4687"]},
+    {"name": "Science", "short_name": "Science", "family": "Nature/Science", "issns": ["0036-8075", "1095-9203"]},
+    {"name": "Nature Communications", "short_name": "Nat Commun", "family": "Nature/Science", "issns": ["2041-1723"]},
+    {"name": "Nature Computational Science", "short_name": "Nat Comput Sci", "family": "Nature/Science", "issns": ["2662-8457"]},
+    {"name": "Nature Machine Intelligence", "short_name": "Nat Mach Intell", "family": "Nature/Science", "issns": ["2522-5839"]},
+    {"name": "Science Advances", "short_name": "Sci Adv", "family": "Nature/Science", "issns": ["2375-2548"]},
+    {"name": "Science Robotics", "short_name": "Sci Robot", "family": "Nature/Science", "issns": ["2470-9476"]},
     {
       "name": "IEEE Transactions on Intelligent Vehicles",
       "short_name": "T-IV",
