@@ -233,7 +233,7 @@ def score_work(work: dict[str, Any], journal: dict[str, Any]) -> tuple[int, list
     digital_twin_in_title = "digital twin" in title_lower or "digital twins" in title_lower
     if "digital twin" not in text and "digital twins" not in text:
         return 0, [], abstract, []
-    if title_lower.startswith(("guest editorial", "editorial")):
+    if work.get("type") not in ("article", "review") or title_lower.startswith(("guest editorial", "editorial")):
         return 0, [], abstract, []
 
     score = 7
@@ -262,6 +262,23 @@ def score_work(work: dict[str, Any], journal: dict[str, Any]) -> tuple[int, list
     if work.get("type") == "review":
         score += 2
         reasons.append("综述论文（+2）")
+
+    if journal.get("family") == "Nature/Science":
+        score += 3
+        reasons.append("Nature/Science 期刊候选优先级（+3）")
+    if any(term in title_lower for term in (*MODEL_UPDATE_TERMS, *REAL_TIME_TERMS, *ALGORITHM_TERMS)):
+        score += 2
+        reasons.append("算法或模型方法在题名中明确出现（+2）")
+    if abstract and any(term in abstract.lower() for term in ("validated", "validation", "experiment", "benchmark")):
+        score += 1
+        reasons.append("摘要提及验证或实验（仅为线索，+1）")
+    try:
+        age = (dt.date.today() - dt.date.fromisoformat(work_date(work))).days
+        if 0 <= age <= 90:
+            score += 2
+            reasons.append("近 90 天发表（+2）")
+    except (ValueError, TypeError):
+        pass
 
     cited = int(work.get("cited_by_count") or 0)
     citation_score = min(3, cited // 10)
@@ -424,7 +441,7 @@ def zotero_item(work: dict[str, Any], collection_key: str) -> dict[str, Any]:
     landing_url = work.get("doi") or primary.get("landing_page_url") or work.get("id") or ""
     tags = [
         {"tag": "数字孪生"},
-        {"tag": "来源:每日自动检索"},
+        {"tag": "来源:每周自动精选"},
         {"tag": f"期刊:{journal['short_name']}"},
     ]
     tags.extend({"tag": f"方向:{direction}"} for direction in work.get("_directions") or [])
@@ -490,16 +507,23 @@ def main() -> int:
         raise RuntimeError(f"Missing configuration: {CONFIG_PATH}")
     state = load_json(STATE_PATH, {"initialized": False, "imported": []})
     today = dt.date.today()
+    iso_year, iso_week, _ = today.isocalendar()
+    week_key = f"{iso_year}-W{iso_week:02d}"
+    imported_this_week = int(state.get("week_imported", 0)) if state.get("week_key") == week_key else 0
+    remaining = max(0, int(config["weekly_limit"]) - imported_this_week)
     initial = args.initial or not state.get("initialized")
     if initial:
         start = months_ago(today, int(config["initial_lookback_months"]))
-        limit = int(config["initial_limit"])
+        limit = min(int(config["initial_limit"]), remaining)
     else:
-        if "daily_lookback_months" in config:
-            start = months_ago(today, int(config["daily_lookback_months"]))
-        else:
-            start = today - dt.timedelta(days=int(config.get("daily_lookback_days", 7)))
-        limit = int(config["daily_limit"])
+        start = months_ago(today, int(config["weekly_lookback_months"]))
+        limit = remaining
+
+    if not limit:
+        logging.info("Weekly quota already reached for %s; no new import", week_key)
+        if args.dry_run:
+            print("[]")
+        return 0
 
     logging.info("Searching %s to %s; initial=%s", start, today, initial)
     candidates = openalex_search(config, start, today)
@@ -518,9 +542,19 @@ def main() -> int:
         candidates = [work for work in candidates if not normalized_doi(work) or normalized_doi(work) not in existing_dois]
 
     selected: list[dict[str, Any]] = []
-    for work in candidates:
-        if crossref_verify(work):
-            selected.append(work)
+    used_journals: set[str] = set()
+    for diversify in (True, False):
+        for work in candidates:
+            if work in selected:
+                continue
+            journal_name = work["_journal"]["short_name"]
+            if diversify and journal_name in used_journals:
+                continue
+            if crossref_verify(work):
+                selected.append(work)
+                used_journals.add(journal_name)
+            if len(selected) >= limit:
+                break
         if len(selected) >= limit:
             break
     if args.dry_run:
@@ -540,9 +574,11 @@ def main() -> int:
     parent_key = ensure_collection(user_id, api_key, config["parent_collection"], False)
     child_key = ensure_collection(user_id, api_key, today.isoformat(), parent_key)
     if not selected:
-        logging.info("No unread high-relevance papers found; created/confirmed today's Zotero collection")
+        logging.info("No unread high-relevance papers found; created/confirmed this week's Zotero collection")
         state["initialized"] = True
         state["last_run"] = dt.datetime.now().astimezone().isoformat()
+        state["week_key"] = week_key
+        state["week_imported"] = imported_this_week
         save_json_atomic(STATE_PATH, state)
         return 0
 
@@ -561,6 +597,8 @@ def main() -> int:
 
     state["initialized"] = True
     state["last_run"] = dt.datetime.now().astimezone().isoformat()
+    state["week_key"] = week_key
+    state["week_imported"] = imported_this_week + len(imported) - len(state.get("imported") or [])
     state["imported"] = list(dict.fromkeys(imported))[-5000:]
     save_json_atomic(STATE_PATH, state)
     return 1 if failures else 0
